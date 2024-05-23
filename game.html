@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>ZIM - Code Creativity</title>
+
+  <script type="module">
+    import zim from "https://zimjs.org/cdn/016/zim";
+    import "https://zimjs.org/cdn/gifler.js"; // For animated GIFs
+
+    const assets = [
+      "forest.png",
+      "run.gif",
+      "plx-1.png",
+      "plx-2.png",
+      "plx-3.png",
+      "plx-4.png",
+      "plx-5.png",
+      "floor.png",
+      "rock.png"
+    ];
+
+    new Frame(FIT, 1024, 768, black, black, ready, assets, "assets/");
+
+    function ready() {
+      let parallaxContainer, images = ["plx-1.png", "plx-2.png", "plx-3.png", "plx-4.png", "plx-5.png"];
+      let imageSpeeds = [5, 10, 15, 20, 25];
+      let bgScrollers = [];
+
+      let floor, floorScroller;
+
+      let playing = false, score = 0, scoreLabel;
+
+      let shape, shapeInterval;
+
+      // Sets up the background with parallax layers
+      function createBg() {
+        parallaxContainer = new Container().center();
+
+        images.forEach((image, index) => {
+          for (let i = 0; i < 2; i++) {
+            const img = new Pic(image).addTo(parallaxContainer).scaleTo().centerReg();
+            img.loc(i * F.width);
+            bgScrollers.push(new Scroller(img, imageSpeeds[index], 1, true));
+          }
+        });
+
+        createFloor();
+      }
+
+      // Creates a moving floor
+      function createFloor() {
+        floor = new Pic("floor.png", F.width).centerReg().loc(0, F.height);
+        floorScroller = new Scroller(floor, 25, 1, true);
+      }
+
+      const playButton = new Button(150, 60, "Play", "green").center();
+      playButton.on("click", () => startGame());
+
+      // Initializes the game
+      function startGame() {
+        createBg();
+        playing = true;
+        scoreLabel = new Label({ text: "Score: 0", size: 30, color: "white", backgroundColor: "green" }).loc(20, 20);
+        score = 0;
+        playButton.visible = false;
+        createShape();
+      }
+
+      // Animates the main character
+      function animateUpAndDown() {
+        shape.animate({ props: { y: H - 370 }, time: 0.3, ease: "linear", call: animateDown });
+      }
+
+      function animateDown() {
+        shape.animate({ props: { y: H - 200 }, time: 0.6, ease: "linear" });
+      }
+
+      // Creates the running character
+      function createShape() {
+        if (!playing) return;
+
+        shape = new GIF("run.gif", 180, 180).reg(CENTER).loc(90, H - 200);
+
+        shapeInterval = interval({ min: 1, max: 3.5 }, () => {
+          const bowlingBall = new Pic("rock.png").scaleTo(S, 12).centerReg().loc(W - 50, H - 150);
+          bowlingBall.animate({ rotation: -360, x: W - (W + 50) }, 1.25, "linear", target => {
+            target.dispose();
+            if (playing) updateScore();
+            else scoreLabel.text = "Game over! Your score is " + score;
+          });
+          Ticker.add(() => checkHit(bowlingBall));
+        }, undefined, true);
+
+        let keyDownEnabled = true;
+        F.on("keydown", (e) => {
+          if (keyDownEnabled) {
+            animateUpAndDown();
+            keyDownEnabled = false;
+            setTimeout(() => { keyDownEnabled = true; }, 700);
+          }
+        });
+      }
+
+      // stop game logic 
+      function stopGame() {
+        playing = false;
+
+      }
+
+      // Checks for collisions
+      function checkHit(bowlingBall) {
+        if (shape && shape.hitTestCircleRect(bowlingBall)) {
+          new Emitter({
+            startPaused: true,
+            obj: new Circle(25, red)
+          }).addTo(S).loc(shape.x, shape.y).spurt(10);
+          shape.dispose();
+          stopGame();
+        }
+      }
+
+      // Updates the score
+      function updateScore() {
+        score++;
+        scoreLabel.text = "Score: " + score;
+      }
+
+    } // End of ready function
+  </script>
+  <meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+
+<body></body>
+
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>ZIM - Code Creativity</title>
+
+  <!-- zimjs.com - JavaScript Canvas Framework -->
+  <script type="module">
+    import zim from "https://zimjs.org/cdn/016/zim";
+
+    new Frame(FIT, 1024, 768, black, dark, ready);
+    function ready() {
+      let playing = false;
+      const timerLabel = new Label({ text: "Timer: 30s", size: 30, color: "white", backgroundColor: "green" }).loc(20, 20);
+      let timeLeft = 30; // seconds
+      let gameTicker; // Holds the ticker function for easy management
+
+      const playButton = new Button(150, 60, "Play", "green").center();
+      playButton.on("click", startGame);
+
+      function startGame() {
+        playing = true;
+        playButton.visible = false;
+        countdown();
+        createShape();
+      }
+
+      function countdown() {
+        // Reset timer for game start
+        timeLeft = 30;
+        timerLabel.text = `Timer: ${timeLeft}s`;
+        let lastTick = Date.now(); // Keep track of the last tick time
+
+        gameTicker = () => {
+          let now = Date.now();
+          let elapsed = now - lastTick; // Calculate elapsed time
+          if (elapsed >= 1000) { // Check if at least one second has passed
+            lastTick = now; // Reset last tick time
+            if (playing) {
+              timeLeft--;
+              timerLabel.text = `Timer: ${timeLeft}s`;
+              if (timeLeft <= 0) {
+                endGame();
+              }
+            }
+          }
+        };
+        Ticker.add(gameTicker); // Add gameTicker to the ZIM Ticker
+      }
+
+      function endGame() {
+        playing = false;
+        timerLabel.text = "Time's up!";
+        Ticker.remove(gameTicker); // Remove gameTicker from the ZIM Ticker
+        setTimeout(() => {
+          playButton.visible = true;
+          window.location.reload();
+        }, 2000)
+      }
+
+      function createShape() {
+        const player = new Pen({
+          penType: "line",
+          size: 20,
+          color: yellow,
+          borderColor: yellow,
+          borderWidth: 20,
+          nib: new Circle(20, "yellow")
+        }).reg(CENTER).loc(90, H - 80);
+
+        // Define a specific boundary
+        const boundary = new Boundary(150, 50, 720, 700); // x, y, width, height
+
+        // Apply the boundary to the player
+        player.drag(boundary);
+
+
+        class Nail extends Container {
+          constructor(radius = 20) {
+            super(-radius, -radius, radius * 2, radius * 2);
+            new Circle(radius, dark).addTo(this);
+            new Circle({ radius, color: silver, percent: 50 }).addTo(this).rot(-45);
+            new Circle(radius * .85, tin).centerReg(this);
+            new Rectangle(radius * 2 * .85, 3, dark).centerReg(this);
+          }
+        }
+
+        const radius = 16;
+        const num = 9;
+        const space = 55;
+        const tile = new Tile(new Nail(radius), num, num, space, space).center();
+
+        const home = new Label({ text: "Home", size: 30, color: "white", backgroundColor: green, labelWidth: 200 }).loc(W - 180, 50);
+
+
+
+        tile.loop((nail, col, row) => {
+          nail.mouseChildren = false;
+          nail.getChildAt(3).rot(rand(-60, 60));
+
+          //make the nail move here
+          if ((col + row) % 2 === 0) {
+            // Moves in X direction
+            nail.animate({
+              props: { x: nail.x + 100 }, // adjust the value as needed
+              time: 1,
+              loop: true,
+              rewind: true
+            });
+          } else {
+            // Moves in Y direction
+            nail.animate({
+              props: { y: nail.y + 100 }, // adjust the value as needed
+              time: 1,
+              loop: true,
+              rewind: true
+            });
+          }
+
+          player.on("pressmove", function () {
+
+            if (player.hitTestReg(nail)) {
+              zog("player is hitting a nail!");
+              new Emitter({
+                startPaused: true,
+                obj: new Circle(15, red)
+              }).addTo(S).loc(player.x, player.y).spurt(10);
+              player.dispose();
+              playing = false;
+              timerLabel.text = "You Lost! Now refresh the page";
+              Ticker.remove(gameTicker);
+            }
+
+            if (player.hitTestCircleRect(home)) {
+              zog("player reached home!");
+
+              tile.dispose();
+              playing = false;
+              timerLabel.text = "You Won! Now refresh the page";
+              Ticker.remove(gameTicker);
+
+            }
+
+          });
+        });
+
+        S.update();
+      }// Refresh the stage to show changes
+    } // end ready
+  </script>
+  <meta name="viewport" content="width=device-width, user-scalable=no" />
+</head>
+
+<body></body>
+
+</html>
+
+<!--  
+ -->
